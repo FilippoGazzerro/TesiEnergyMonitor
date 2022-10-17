@@ -1,0 +1,1054 @@
+[
+    {
+        "id": "bf8b47a9.7cb118",
+        "type": "tab",
+        "label": "energy-state",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "bbc4c43976194d2d",
+        "type": "tab",
+        "label": "total-active-energy",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "f593f7bc.50af48",
+        "type": "modbus-client",
+        "name": "SRV2",
+        "clienttype": "simpleser",
+        "bufferCommands": true,
+        "stateLogEnabled": true,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "unit_id": 2,
+        "commandDelay": 1,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": false,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": false
+    },
+    {
+        "id": "ab1dfda9.d69f4",
+        "type": "function",
+        "z": "bf8b47a9.7cb118",
+        "name": "Parse&Save",
+        "func": "// 1freq-2watt-3volt-4amp\nvar m=msg.reading-1;\nvar val = 0;\nif (m==1){  // FREQ\n    val = (msg.payload.data /100);\n}\nif (m == 2) {  // watt\n    val = (msg.payload.data[0] * 256 * 256) + msg.payload.data[1];\n    val = val / 100;\n}\nif (m == 3) {  // volt\n    val = (msg.payload.data / 100);\n}\nif (m == 4) {  // ampere\n    val = (msg.payload.data[0] * 256 * 256) + msg.payload.data[1];\n    val = val / 100;\n}\nglobal.set(\"VAR\"+m,val);\nmsg.payload = val.toFixed(2);\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 210,
+        "y": 220,
+        "wires": [
+            [
+                "364806db06389f3c",
+                "c1c5d2cbfca27526"
+            ]
+        ]
+    },
+    {
+        "id": "b8cb0c67.4abc1",
+        "type": "comment",
+        "z": "bf8b47a9.7cb118",
+        "name": "THINGS",
+        "info": "",
+        "x": 120,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "bdc4f4cc.dace58",
+        "type": "debug",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 910,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "8b0e29e7.da5788",
+        "type": "debug",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "address",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 330,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "cc688087.6dff5",
+        "type": "function",
+        "z": "bf8b47a9.7cb118",
+        "name": "Things",
+        "func": "// queste sono le things ( i contatori) con il relativo indirizzo modbus\nvar Things = global.get(\"Things\");\nif (isNaN(Things)){\n    Things = [\n        { thing: \"Via Opera Pia 11a - primo piano\", address: 2 },\n        { thing: \"Via Opera Pia 11a - secondo piano\", address: 2 },\n        { thing: \"Via Opera Pia 11a - terzo piano\", address: 2 },\n    ]\n    global.set(\"Things\", Things)\n}\nvar cur_Things = global.get(\"cur_Things\");\nif (isNaN(cur_Things)) {\n    var foo = global.set(\"cur_Things\", 0);\n}\ncur_Things = global.get(\"cur_Things\");\n\nif (cur_Things >= Things.length) {\n    cur_Things=0;\n}\n\n//node.warn(\"cur_counter:\" + cur_counter);\n//node.warn(\"addr:\" + counters[cur_counter].address);\n//node.warn(\"thing:\" + counters[cur_counter].thing);\n\nvar foo = global.set(\"cur_Things\", cur_Things+1);\nmsg.address = Things[cur_Things].address;\nmsg.thing = Things[cur_Things].thing;\nmsg.reading=1;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 270,
+        "y": 60,
+        "wires": [
+            [
+                "8b0e29e7.da5788",
+                "3fb70ec4b378a311",
+                "1bf0d8fac0fc85c9"
+            ]
+        ]
+    },
+    {
+        "id": "7caf0fa1.c8953",
+        "type": "inject",
+        "z": "bf8b47a9.7cb118",
+        "name": "Minuto",
+        "props": [],
+        "repeat": "60",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "10",
+        "topic": "",
+        "x": 120,
+        "y": 60,
+        "wires": [
+            [
+                "cc688087.6dff5"
+            ]
+        ]
+    },
+    {
+        "id": "212aaf32.f5477",
+        "type": "modbus-flex-getter",
+        "z": "bf8b47a9.7cb118",
+        "name": "modBus",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "logIOActivities": false,
+        "server": "f593f7bc.50af48",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": false,
+        "keepMsgProperties": true,
+        "x": 700,
+        "y": 120,
+        "wires": [
+            [],
+            [
+                "ab1dfda9.d69f4",
+                "bdc4f4cc.dace58",
+                "b15d90df386588d8"
+            ]
+        ]
+    },
+    {
+        "id": "8c07391e9c5c1943",
+        "type": "inject",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "props": [],
+        "repeat": "1500",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "10",
+        "topic": "",
+        "x": 110,
+        "y": 460,
+        "wires": [
+            [
+                "1f3d09649d800eb8"
+            ]
+        ]
+    },
+    {
+        "id": "1f3d09649d800eb8",
+        "type": "function",
+        "z": "bf8b47a9.7cb118",
+        "name": "LoginReq",
+        "func": "msg.payload = {\n    \"username\": \"energy-manager-user-username\",\n    \"password\": \"energy-manager-user-password\",\n    \"tenant\": \"energy-manager-tenant\"\n};\n\nreturn msg",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 260,
+        "y": 460,
+        "wires": [
+            [
+                "41e8fa075b222f99"
+            ]
+        ]
+    },
+    {
+        "id": "41e8fa075b222f99",
+        "type": "http request",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://students.measurify.org/v1/login",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 430,
+        "y": 460,
+        "wires": [
+            [
+                "6be44b9da67339be"
+            ]
+        ]
+    },
+    {
+        "id": "6be44b9da67339be",
+        "type": "function",
+        "z": "bf8b47a9.7cb118",
+        "name": "SaveToken",
+        "func": "// salva il token di autorizzazione\nvar myt = msg.payload.token;\nvar foo = global.set(\"token\",myt);\nmsg.payload=myt;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 610,
+        "y": 460,
+        "wires": [
+            [
+                "13346c952334f1c8"
+            ]
+        ]
+    },
+    {
+        "id": "13346c952334f1c8",
+        "type": "debug",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 790,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "47e4a55970908b04",
+        "type": "inject",
+        "z": "bf8b47a9.7cb118",
+        "name": "Test",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "10",
+        "topic": "",
+        "x": 110,
+        "y": 360,
+        "wires": [
+            [
+                "1275dcb029f98fb6"
+            ]
+        ]
+    },
+    {
+        "id": "1275dcb029f98fb6",
+        "type": "function",
+        "z": "bf8b47a9.7cb118",
+        "name": "energy-state",
+        "func": "var t = global.get(\"token\");\nmsg.payload = {\n    \"thing\" : \"Via Opera Pia 11a - primo piano\",\n        \"feature\": \"energy-state\",\n            \"device\": \"energy-monitor\",\n                \"samples\": [{ \"values\": [0.00, 230.92, 0.00, 50.01] }]\n};\nmsg.headers = {};\nmsg.headers['Authorization'] = t;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 270,
+        "y": 360,
+        "wires": [
+            [
+                "f0c588ea8ee9d4fb"
+            ]
+        ]
+    },
+    {
+        "id": "f0c588ea8ee9d4fb",
+        "type": "http request",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://students.measurify.org/v1/measurements",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "Accept",
+                "keyValue": "",
+                "valueType": "application/json",
+                "valueValue": ""
+            }
+        ],
+        "x": 490,
+        "y": 360,
+        "wires": [
+            [
+                "93fe6a17ac3b95a4",
+                "9a3a1b69573e791b"
+            ]
+        ]
+    },
+    {
+        "id": "93fe6a17ac3b95a4",
+        "type": "debug",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload._id",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 660,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "1bf0d8fac0fc85c9",
+        "type": "function",
+        "z": "bf8b47a9.7cb118",
+        "name": "Poll",
+        "func": "// questa viene richiamata 4 volte per tutte le letture in real-time\nvar m=msg.reading;\nnode.warn(\"m=\"+m);\nvar ui=msg.address;\nvar requests = [\n    { address: 304, qt: 1 },    // freq\n    { address: 320, qt: 2 },    // watts\n    { address: 305, qt: 1 },    // volts\n    { address: 313, qt: 2 },    // ampere\n]\nmsg.payload = {     // prepara richiesta \n    value: msg.payload,\n    'fc': 3, 'unitid': ui,\n    'address': requests[m-1].address, \n    'quantity': requests[m-1].qt\n}\nmsg.reading = m + 1;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 60,
+        "wires": [
+            [
+                "2315a2f2a0a2063e",
+                "212aaf32.f5477"
+            ]
+        ]
+    },
+    {
+        "id": "3fb70ec4b378a311",
+        "type": "debug",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "thing",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 380,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "2315a2f2a0a2063e",
+        "type": "delay",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 680,
+        "y": 60,
+        "wires": [
+            [
+                "cecafedc87c3c796"
+            ]
+        ]
+    },
+    {
+        "id": "cecafedc87c3c796",
+        "type": "switch",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "property": "reading",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lte",
+                "v": "4",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 1,
+        "x": 850,
+        "y": 60,
+        "wires": [
+            [
+                "1bf0d8fac0fc85c9"
+            ]
+        ]
+    },
+    {
+        "id": "b15d90df386588d8",
+        "type": "debug",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "reading",
+        "targetType": "msg",
+        "statusVal": "payload.buffer",
+        "statusType": "auto",
+        "x": 910,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "364806db06389f3c",
+        "type": "switch",
+        "z": "bf8b47a9.7cb118",
+        "name": "Last?",
+        "property": "reading",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "5",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 1,
+        "x": 470,
+        "y": 220,
+        "wires": [
+            [
+                "557ab173b49bef04",
+                "e466126cff1f76d4"
+            ]
+        ]
+    },
+    {
+        "id": "557ab173b49bef04",
+        "type": "debug",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "reading",
+        "targetType": "msg",
+        "statusVal": "payload.buffer",
+        "statusType": "auto",
+        "x": 510,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "e466126cff1f76d4",
+        "type": "function",
+        "z": "bf8b47a9.7cb118",
+        "name": "Send energy-state",
+        "func": "var t = global.get(\"token\");\nvar v1 = global.get(\"VAR1\");// freq\nvar v2 = global.get(\"VAR2\");// watts\nvar v3 = global.get(\"VAR3\");// volts\nvar v4 = global.get(\"VAR4\"); // ampere\nmsg.payload = {\n    \"thing\" : msg.thing,\n        \"feature\": \"energy-state\",\n            \"device\": \"energy-monitor\",\n                \"samples\": [{ \"values\": [ v2,v3,v4,v1] }]\n};\nmsg.headers = {};\nmsg.headers['Authorization'] = t;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 220,
+        "wires": [
+            [
+                "f0c588ea8ee9d4fb"
+            ]
+        ]
+    },
+    {
+        "id": "c1c5d2cbfca27526",
+        "type": "debug",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.buffer",
+        "statusType": "auto",
+        "x": 290,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "0dda77b7b86cea85",
+        "type": "comment",
+        "z": "bf8b47a9.7cb118",
+        "name": "ACCESS TOKEN",
+        "info": "",
+        "x": 120,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "1629bda9ba98c959",
+        "type": "comment",
+        "z": "bf8b47a9.7cb118",
+        "name": "energy-state",
+        "info": "",
+        "x": 130,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "4793f8b2de8dd142",
+        "type": "inject",
+        "z": "bf8b47a9.7cb118",
+        "name": "Test",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "10",
+        "topic": "",
+        "x": 690,
+        "y": 300,
+        "wires": [
+            [
+                "e466126cff1f76d4"
+            ]
+        ]
+    },
+    {
+        "id": "9a3a1b69573e791b",
+        "type": "debug",
+        "z": "bf8b47a9.7cb118",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 950,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "6dd25b080d4710ee",
+        "type": "inject",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "10",
+        "topic": "Tutti",
+        "payload": "",
+        "payloadType": "str",
+        "x": 170,
+        "y": 480,
+        "wires": [
+            [
+                "4efe3c56172f3c44"
+            ]
+        ]
+    },
+    {
+        "id": "4efe3c56172f3c44",
+        "type": "function",
+        "z": "bbc4c43976194d2d",
+        "name": "total-active-energy",
+        "func": "var t = global.get(\"token\");\nmsg.payload = {\n    \"thing\" : \"Via Opera Pia 11a - primo piano\",\n    \"feature\": \"total-active-energy\",\n            \"device\": \"energy-monitor\",\n                \"samples\": [{ \"values\": [2882] }]\n};\nmsg.headers = {};\nmsg.headers['Authorization'] = t;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 480,
+        "wires": [
+            [
+                "8afafdb97ee30650"
+            ]
+        ]
+    },
+    {
+        "id": "8afafdb97ee30650",
+        "type": "http request",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://students.measurify.org/v1/measurements",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 550,
+        "y": 480,
+        "wires": [
+            [
+                "2806b8570635b939"
+            ]
+        ]
+    },
+    {
+        "id": "2806b8570635b939",
+        "type": "debug",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 710,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "461cc9ed326e87b0",
+        "type": "inject",
+        "z": "bbc4c43976194d2d",
+        "name": "2359",
+        "props": [],
+        "repeat": "",
+        "crontab": "59 23 * * *",
+        "once": false,
+        "onceDelay": "10",
+        "topic": "",
+        "x": 110,
+        "y": 120,
+        "wires": [
+            [
+                "cc5a1849cfab59b4"
+            ]
+        ]
+    },
+    {
+        "id": "95dac03c2c334a9b",
+        "type": "function",
+        "z": "bbc4c43976194d2d",
+        "name": "Counters",
+        "func": "// queste sono le things ( i contatori) con il relativo indirizzo modbus\nvar Things = global.get(\"Things\");\n// supponiamo che sia stata settata entro le 23:59 ed esista\nvar cur_counter;\n//global.get(\"cur_counter\");\nif (!isNaN(msg.cur_counter)) {\n    node.warn(\"get cur_counter:\");\n    cur_counter=msg.cur_counter;\n} else {\n    cur_counter = 0;\n}\nnode.warn(\"cur_counter:\" + cur_counter);\n\n//node.warn(\"cur_counter:\" + cur_counter);\n//node.warn(\"addr:\" + counters[cur_counter].address);\n//node.warn(\"thing:\" + counters[cur_counter].thing);\n\nmsg.address = Things[cur_counter].address;\nmsg.thing = Things[cur_counter].thing;\nmsg.cur_counter = cur_counter+1;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 180,
+        "wires": [
+            [
+                "7dc0529450b0586e",
+                "e545b6cae463dae4",
+                "1fe4a9ac16c867d2",
+                "360da2a5fc850c3d",
+                "7b87c8e596d7bdf6"
+            ]
+        ]
+    },
+    {
+        "id": "7dc0529450b0586e",
+        "type": "debug",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "address",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 510,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "e545b6cae463dae4",
+        "type": "debug",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "thing",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 920,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "1fe4a9ac16c867d2",
+        "type": "function",
+        "z": "bbc4c43976194d2d",
+        "name": "Poll-total",
+        "func": "// richiesta totale contatori\nvar ui=msg.address;\n    msg.payload = { value: msg.payload, \n    'fc': 3, 'unitid': ui, \n    'address': 40960 , 'quantity': 4 } \n//msg.topic=t;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 240,
+        "wires": [
+            [
+                "de90af537acb2aa7"
+            ]
+        ]
+    },
+    {
+        "id": "de90af537acb2aa7",
+        "type": "modbus-flex-getter",
+        "z": "bbc4c43976194d2d",
+        "name": "modBus",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "logIOActivities": false,
+        "server": "f593f7bc.50af48",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": false,
+        "keepMsgProperties": true,
+        "x": 740,
+        "y": 240,
+        "wires": [
+            [],
+            [
+                "bf16ed76b30de75b",
+                "90c665b0e2e05ff0",
+                "c8655d834ad42a7d"
+            ]
+        ]
+    },
+    {
+        "id": "90c665b0e2e05ff0",
+        "type": "debug",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 930,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "c8655d834ad42a7d",
+        "type": "debug",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "reading",
+        "targetType": "msg",
+        "statusVal": "payload.buffer",
+        "statusType": "auto",
+        "x": 930,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "bf16ed76b30de75b",
+        "type": "function",
+        "z": "bbc4c43976194d2d",
+        "name": "total-active-enrgy",
+        "func": "// total-active-enrgy\nvar m=msg.reading-1;\nnode.warn(\"totact\");\nvar val = 0;\nval = (msg.payload.data[0] * 256 * 256) + msg.payload.data[1];\nval = val / 100;\nvar t = global.get(\"token\");\nmsg.payload = {\n//    \"thing\": \"Via Opera Pia 11a - primo piano\",\n    \"thing\": msg.thing,\n    \"feature\": \"total-active-energy\",\n    \"device\": \"energy-monitor\",\n    \"samples\": [{ \"values\": [val] }]\n};\nmsg.headers = {};\nmsg.headers['Authorization'] = t;\nmsg.val=val;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 320,
+        "wires": [
+            [
+                "e4d4a5f4a5d90552",
+                "36f7ee4134baa4c9"
+            ]
+        ]
+    },
+    {
+        "id": "360da2a5fc850c3d",
+        "type": "delay",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 500,
+        "y": 180,
+        "wires": [
+            [
+                "ced9337e97242334"
+            ]
+        ]
+    },
+    {
+        "id": "ced9337e97242334",
+        "type": "switch",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "property": "cur_counter",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lte",
+                "v": "3",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 1,
+        "x": 650,
+        "y": 180,
+        "wires": [
+            [
+                "95dac03c2c334a9b"
+            ]
+        ]
+    },
+    {
+        "id": "e4d4a5f4a5d90552",
+        "type": "http request",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://students.measurify.org/v1/measurements",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 770,
+        "y": 320,
+        "wires": [
+            [
+                "42b157d7d1123901",
+                "a2486655e54922fa"
+            ]
+        ]
+    },
+    {
+        "id": "42b157d7d1123901",
+        "type": "debug",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload._id",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 940,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "36f7ee4134baa4c9",
+        "type": "debug",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "val",
+        "targetType": "msg",
+        "statusVal": "payload.buffer",
+        "statusType": "auto",
+        "x": 760,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "7b87c8e596d7bdf6",
+        "type": "debug",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "cur_counter",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 730,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "cc5a1849cfab59b4",
+        "type": "delay",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "30",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 140,
+        "y": 180,
+        "wires": [
+            [
+                "95dac03c2c334a9b"
+            ]
+        ]
+    },
+    {
+        "id": "acaa02f05ba51e98",
+        "type": "inject",
+        "z": "bbc4c43976194d2d",
+        "name": "Test",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "10",
+        "topic": "",
+        "x": 290,
+        "y": 120,
+        "wires": [
+            [
+                "95dac03c2c334a9b"
+            ]
+        ]
+    },
+    {
+        "id": "40d86d1c5b42193e",
+        "type": "comment",
+        "z": "bbc4c43976194d2d",
+        "name": "total-active-energy",
+        "info": "",
+        "x": 190,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "a2486655e54922fa",
+        "type": "debug",
+        "z": "bbc4c43976194d2d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 950,
+        "y": 380,
+        "wires": []
+    }
+]
